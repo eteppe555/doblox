@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Games</title>
+<style>
+:root {
+  --bg: #f2f4f5;
+  --bar: #ffffff;
+  --line: #dcdfe2;
+  --fg: #191b1d;
+  --hover: #e6e8ea;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #232527; --bar: #1a1c1e; --line: #393b3d; --fg: #f7f7f8; --hover: #2e3033; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #232527; --bar: #1a1c1e; --line: #393b3d; --fg: #f7f7f8; --hover: #2e3033; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.4 "Comic Sans MS", "Comic Sans", "Comic Neue", cursive, sans-serif;
+  display: flex; flex-direction: column;
+}
+#grid { padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; align-content: start; }
+#logo { text-align: center; padding: 20px 24px 0; }
+#logo img { max-width: 100%; max-height: 140px; }
+.tile { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.thumb {
+  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: flex-end; padding: 10px;
+  font-weight: 700; font-size: 22px; line-height: 1.1; color: #fff;
+}
+.tile:hover .thumb { filter: brightness(1.1); }
+.tile:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; border-radius: 8px; }
+#view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+#view.on { display: flex; }
+.bar { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bar); border-bottom: 1px solid var(--line); }
+.bar b { flex: 1; }
+.btn { background: var(--hover); color: var(--fg); border: 0; border-radius: 4px; padding: 6px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn:hover { filter: brightness(1.15); }
+#box { flex: 1; min-height: 0; background: #000; }
+#box iframe { width: 100%; height: 100%; border: 0; display: block; }
+</style>
+</head>
+<body>
+<div id="logo"><img src="https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/doblox.png" alt="doblox"></div>
+<div id="grid"></div>
+<div id="view">
+  <div class="bar">
+    <button class="btn" id="back">Back</button>
+    <b id="title"></b>
+    <button class="btn" id="full">Fullscreen</button>
+  </div>
+  <div id="box"></div>
+</div>
+
+<script>
+/* To add a game, copy one line, paste it at the end of the list
+   (put a comma after the previous line) and change the values. */
+var GAMES = [
+  { name: "YT Sim",       url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/ytsim.html",       color: "#b3363a" },
+  { name: "Obby Parkour", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/obbyparkour.html", color: "#2f6fb5" },
+  { name: "Color Block", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/colorblock.html", color: "#3d8a4e" },
+  { name: "Tower of Hell", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/towerofhell.html", color: "#8a3fa0" },
+  { name: "Crush Stuff", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/crushstuff.html", color: "#c26a1f" },
+  { name: "+1 Speed Per Second", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/plus1.html", color: "#1f8a8a" },
+  { name: "IQ Test", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/iqtest.html", color: "#5a5fc7" },
+  { name: "Draw to Escape", url: "https://cdn.jsdelivr.net/gh/eteppe555/doblox@main/drawescape.html", color: "#c2385f" }
+];
+
+(function () {
+  var grid = document.getElementById("grid"), view = document.getElementById("view"), box = document.getElementById("box");
+
+  window.addEventListener("message", function (ev) {
+    var m = ev.data;
+    if (!m || !m.type || !ev.source) return;
+    if (m.type === "UNITY_SAVE") {
+      try { localStorage.setItem("unity_save_" + m.key, m.data); } catch (e) {}
+      ev.source.postMessage({ type: "UNITY_SAVE_ACK", key: m.key }, "*");
+    }
+    if (m.type === "UNITY_LOAD_REQ") {
+      var data = null;
+      try { data = localStorage.getItem("unity_save_" + m.key); } catch (e) {}
+      ev.source.postMessage({ type: "UNITY_LOAD_RESP", key: m.key, data: data }, "*");
+    }
+  });
+
+  GAMES.forEach(function (g) {
+    var t = document.createElement("button");
+    t.className = "tile"; t.type = "button";
+    var th = document.createElement("div");
+    th.className = "thumb"; th.style.background = g.color; th.textContent = g.name;
+    t.appendChild(th);
+    t.addEventListener("click", function () {
+      var f = document.createElement("iframe");
+      f.src = "about:blank";
+      f.setAttribute("allowfullscreen", "");
+      f.setAttribute("allow", "fullscreen; autoplay; gamepad");
+      box.innerHTML = ""; box.appendChild(f);
+      fetch(g.url).then(function (r) { return r.text(); }).then(function (html) {
+        var d = f.contentDocument;
+        d.open();
+        d.write(html); d.close();
+      }).catch(function () { f.src = g.url; });
+      document.getElementById("title").textContent = g.name;
+      grid.style.display = "none"; document.getElementById("logo").style.display = "none";
+      view.classList.add("on");
+    });
+    grid.appendChild(t);
+  });
+
+  document.getElementById("back").addEventListener("click", function () {
+    box.innerHTML = ""; view.classList.remove("on"); grid.style.display = ""; document.getElementById("logo").style.display = "";
+  });
+  document.getElementById("full").addEventListener("click", function () {
+    try { box.requestFullscreen(); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
